@@ -461,19 +461,23 @@ def get_cv(db: Session, user_id: int) -> Dict[str, Any]:
             "fields": {},
         }
 
-    labels = {
-        qt.field_name: qt.label
-        for qt in db.query(QuestionTemplate).all()
-    }
+    templates = list(db.query(QuestionTemplate).all())
+    labels = {qt.field_name: qt.label for qt in templates}
+    priorities = {qt.field_name: qt.priority for qt in templates}
     data = resume.data
     lines: list[str] = ["📄 <b>Ваше резюме</b>\n"]
 
     # Базовые поля (без work_experience)
+    entries = []
     for key, val in data.items():
         if key.endswith("_ok") or isinstance(val, list):
             continue
         if not val or str(val).strip() == "":
             continue  # пропускаем пустые
+        prio = priorities.get(key, float("inf"))
+        entries.append((prio, key, val))
+
+    for _, key, val in sorted(entries, key=lambda x: x[0]):
         lines.append(f"• <b>{labels.get(key, key)}</b>: «{val}»")
 
     # Опыт работы
