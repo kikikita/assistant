@@ -10,6 +10,7 @@ from handlers import (
 import asyncio
 import logging
 from utils.commands import set_commands
+from middlewares.typing import TypingMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ async def start():
 
     dp.startup.register(start_bot)
     dp.shutdown.register(stop_bot)
+
+    dp.message.middleware.register(TypingMiddleware())
 
     dp.include_routers(
         speech.router,
