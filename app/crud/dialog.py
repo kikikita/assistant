@@ -1,7 +1,7 @@
 import logging
 from datetime import date
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -20,7 +20,7 @@ if not logger.handlers:
     )
     handler.setFormatter(logging.Formatter(fmt))
     logger.addHandler(handler)
-    
+
 REQUIRED_FIELDS: Dict[str, set] = {
     "work_experience": {"exp_company", "exp_position"},
 }
@@ -146,8 +146,28 @@ def _work_item_summary(item: dict, idx: int, labels: dict) -> str:
     if not filled:
         return ""
 
-    lines = [f"{idx}. "]
-    for label, value in filled:
+    ordered: List[Tuple[str, str, Any]] = []
+    if (
+        item.get("from_to")
+        and str(item["from_to"]).strip()
+        and "from_to" in label_map
+    ):
+        ordered.append(
+            ("from_to", label_map.get("from_to", "from_to"), item["from_to"])
+        )
+
+    for key, value in item.items():
+        if key == "from_to":
+            continue
+        if value and str(value).strip() and key in label_map:
+            ordered.append((key, label_map.get(key, key), value))
+
+    if not ordered:
+        return ""
+
+    first = ordered[0]
+    lines = [f"{idx}. <b>{first[1]}</b>: {first[2]}"]
+    for _, label, value in ordered[1:]:
         lines.append(f"   • <b>{label}</b>: {value}")
     return "\n".join(lines)
 
@@ -314,7 +334,6 @@ def save_answer(
         field_name,
         answer_raw,
     )
-    
     # Сохраняем в историю разговора
     db.add(
         Answer(
@@ -461,19 +480,23 @@ def get_cv(db: Session, user_id: int) -> Dict[str, Any]:
             "fields": {},
         }
 
-    labels = {
-        qt.field_name: qt.label
-        for qt in db.query(QuestionTemplate).all()
-    }
+    templates = list(db.query(QuestionTemplate).all())
+    labels = {qt.field_name: qt.label for qt in templates}
+    priorities = {qt.field_name: qt.priority for qt in templates}
     data = resume.data
     lines: list[str] = ["📄 <b>Ваше резюме</b>\n"]
 
     # Базовые поля (без work_experience)
+    entries = []
     for key, val in data.items():
         if key.endswith("_ok") or isinstance(val, list):
             continue
         if not val or str(val).strip() == "":
             continue  # пропускаем пустые
+        prio = priorities.get(key, float("inf"))
+        entries.append((prio, key, val))
+
+    for _, key, val in sorted(entries, key=lambda x: x[0]):
         lines.append(f"• <b>{labels.get(key, key)}</b>: «{val}»")
 
     # Опыт работы
