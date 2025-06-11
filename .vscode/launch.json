@@ -1,0 +1,51 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: debugpy APP",
+        "type": "debugpy",
+        "request": "attach",
+        "connect": {
+          "host": "localhost",
+          "port": 15678
+        },
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/app",
+            "remoteRoot": "/app"
+          }
+        ]
+      },
+      {
+        "name": "Python: debugpy TG BOT",
+        "type": "debugpy",
+        "request": "attach",
+        "connect": {
+          "host": "localhost",
+          "port": 25678
+        },
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/bot",
+            "remoteRoot": "/bot"
+          }
+        ]
+      },
+      {
+        "name": "Remote: debugpy APP",
+        "type": "debugpy",
+        "request": "attach",
+        "connect": {
+          "host": "tomoruhost",
+          "port": 15678
+        },
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/app",
+            "remoteRoot": "/app"
+          }
+        ]
+      }
+    ]
+  }
+  

@@ -1,0 +1,71 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: dockerfile
+    container_name: app_ra
+    env_file:
+      - .env
+    ports:
+      # - "28000:8000"
+      - "15678:5678"
+    environment:
+      - OPENAI_PROXY=socks5://shadowsocks-client:1080
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    volumes:
+      - ./app/alembic:/app/alembic
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: bot_ra
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - ADMIN_ID=${ADMIN_ID}
+      - APP_URL=http://app:8000
+      - API_KEY=SECRET_TOKEN
+    ports:
+      - "25678:5678"
+    networks:
+      - app-network
+    env_file:
+      - .env
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  redis:
+    image: redis:6.2
+    container_name: redis_ra
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:14
+    container_name: postgres_ra
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  shadowsocks-client:
+    image: teddysun/shadowsocks-libev
+    command: ss-local -s 89.22.236.118 -p 8388 -k KEPiE96lbYkv -m chacha20-ietf-poly1305 -b 0.0.0.0 -l 1080
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
