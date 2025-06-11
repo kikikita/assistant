@@ -252,6 +252,7 @@ async def start_dialog(message: Message, bot: Bot, state: FSMContext) -> None:
             consent_txt,
             parse_mode=ParseMode.HTML,
             reply_markup=consent_kb(),
+            disable_web_page_preview=True,
         )
         return
     await _begin_dialog(message.chat.id, message.from_user.id, bot, state, message)
