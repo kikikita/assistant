@@ -96,6 +96,8 @@ async def extract_resume_data_with_llm(txt: str) -> BaseModel:
     try:
         result = await dynamic_resume_model_manager.llm.ainvoke(prompt)
         logger.debug("LLM raw result: %s", result)
+        for experience in result.work_experience:
+            experience.id = str(uuid.uuid4())[:5]
         return result
     except Exception as exc:
         logger.error("Ошибка LLM: %s", exc, exc_info=True)

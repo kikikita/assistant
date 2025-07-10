@@ -10,6 +10,7 @@ from settings import settings
 router = Router()
 AGENT_ENDPOINT = f"{settings.bots.app_url}/api/v1/dialog/agent"
 
+
 @router.message(F.text)
 async def unknown_message(message: Message, state: FSMContext):
     consent_txt = (

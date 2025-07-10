@@ -107,6 +107,7 @@ async def _send_long(
     bot: Bot,
     *,
     reply_markup=None,
+    parse_mode=ParseMode.HTML,
 ) -> None:
     """
     Отправляет текст (возможно многострочный) несколькими сообщениями.
@@ -116,8 +117,9 @@ async def _send_long(
         await bot.send_message(
             chat_id,
             chunk,
-            parse_mode=ParseMode.HTML,
+            parse_mode=parse_mode,
             reply_markup=reply_markup if i == len(chunks) - 1 else None,
+            disable_web_page_preview=True,
         )
 
 
@@ -130,18 +132,20 @@ async def _ask_agent(tg_id: int, text: str, message: Message) -> str:
     """
     stop_typing = asyncio.Event()
     asyncio.create_task(send_typing_periodically(message, stop_typing))
-    async with httpx.AsyncClient(timeout=120.0) as cli:
-        resp = await cli.post(
-            f"{settings.bots.app_url}/api/v1/dialog/agent",
-            json={"user_id": tg_id, "message": text},
-        )
-    if resp.status_code != 200:
-        return (
-            "⚠️ Извините, сервис временно недоступен. "
-            "Попробуйте повторить запрос чуть позже."
-        )
-    stop_typing.set()
-    return resp.json().get("answer") or "…"
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as cli:
+            resp = await cli.post(
+                f"{settings.bots.app_url}/api/v1/dialog/agent",
+                json={"user_id": tg_id, "message": text},
+            )
+        if resp.status_code != 200:
+            return (
+                "⚠️ Извините, сервис временно недоступен. "
+                "Попробуйте повторить запрос чуть позже."
+            )
+        return resp.json().get("answer") or "…"
+    finally:
+        stop_typing.set()
 
 
 # ────────────────────────── согласия ──────────────────────────────
@@ -176,7 +180,7 @@ async def _start_agent_flow(
     """
     await bot.send_chat_action(chat_id, "typing")
     answer = await _ask_agent(tg_id, initial_prompt, message)
-    await _send_long(chat_id, answer, bot)
+    await _send_long(chat_id, answer, bot, parse_mode=ParseMode.MARKDOWN)
     await state.set_state(DialogSG.waiting_for_answer)
 
 
@@ -298,7 +302,7 @@ async def relay_to_agent(message: Message, state: FSMContext) -> None:
     Любое пользовательское сообщение → ассистенту, ответ – обратно.
     """
     answer = await _ask_agent(message.from_user.id, message.text or "", message)
-    await _send_long(message.chat.id, answer, message.bot)
+    await _send_long(message.chat.id, answer, message.bot, parse_mode=ParseMode.MARKDOWN)
 
 
 # ─────────────────── reset / continue черновика ───────────────────

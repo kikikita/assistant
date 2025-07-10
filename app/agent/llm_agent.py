@@ -10,6 +10,7 @@ from agent.resume import get_user_resume, get_resume_scheme
 from agent.llm_graph import graph
 from crud.conversation_history import get_conversation_history, get_user_session_for_conversation
 from crud.user import get_user_by_tg_id
+from langchain_core.callbacks import get_usage_metadata_callback
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -52,20 +53,22 @@ async def get_assistant_response(question: str, user_id: str, db: Session) -> st
 
         all_messages = past_messages + [HumanMessage(content=question)]
 
-        response = await graph.ainvoke(
-            {
-                "user_id": user_id,
-                "current_resume": current_resume,
-                "resume_scheme": resume_scheme,
-                "messages": all_messages,
-                "session": db
-            },
-            config=config,
-        )
+        with get_usage_metadata_callback() as cb:
+            response = await graph.ainvoke(
+                {
+                    "user_id": user_id,
+                    "current_resume": current_resume,
+                    "resume_scheme": resume_scheme,
+                    "messages": all_messages,
+                    "session": db
+                },
+                config=config,
+            )
+            logger.info("Usage metadata: %s", cb.usage_metadata)
 
-        final_msg = response["messages"][-1].content if response else None
-        logger.debug("Assistant final content: %s", final_msg)
-        return final_msg
+            final_msg = response["messages"][-1].content if response else None
+            logger.debug("Assistant final content: %s", final_msg)
+            return final_msg
 
     except Exception as exc:
         logger.exception("Failed to get assistant response: %s", exc)

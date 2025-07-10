@@ -34,13 +34,13 @@ def validate(field: str, value: Any) -> Tuple[bool, str]:
     if field in {"desired_income", "salary", "salary_expectation"}:
         if _is_numeric(value):
             return True, ""
-        return False, _err("Система: Доход должен быть числом в рублях. Не проси пользователя исправить, вызови инструмент снова с корректным инсутрментом.")
+        return False, _err("Доход должен быть числом.")
 
     # ---- Имя/фамилия --------------------------------------------------------
     if field in {"first_name", "last_name", "middle_name"}:
         if isinstance(value, str) and value.isalpha():
             return True, ""
-        return False, _err("Имя должно содержать только буквы")
+        return False, _err("Имя должно содержать только буквы.")
 
     # ---- Дата рождения ------------------------------------------------------
     if field in {"birth_date", "date_of_birth"}:
