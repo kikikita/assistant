@@ -29,7 +29,7 @@ async def unknown_message(message: Message, state: FSMContext):
         )
         return
     try:
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=20.0) as client:
             resp = await client.post(
                 AGENT_ENDPOINT,
                 json={
@@ -39,7 +39,7 @@ async def unknown_message(message: Message, state: FSMContext):
             )
             answer = resp.json().get("answer", "Ошибка ассистента")
     except httpx.ReadTimeout:
-        answer = "Извините, ассистент не ответил вовремя. Попробуйте ещё раз."
+        answer = "Извините, не могу ответить на данное сообщение."
     except Exception as e:
         answer = f"Ошибка ассистента: {type(e).__name__}"
 

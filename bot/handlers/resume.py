@@ -133,7 +133,7 @@ async def _ask_agent(tg_id: int, text: str, message: Message) -> str:
     stop_typing = asyncio.Event()
     asyncio.create_task(send_typing_periodically(message, stop_typing))
     try:
-        async with httpx.AsyncClient(timeout=120.0) as cli:
+        async with httpx.AsyncClient(timeout=20.0) as cli:
             resp = await cli.post(
                 f"{settings.bots.app_url}/api/v1/dialog/agent",
                 json={"user_id": tg_id, "message": text},
@@ -144,6 +144,8 @@ async def _ask_agent(tg_id: int, text: str, message: Message) -> str:
                 "Попробуйте повторить запрос чуть позже."
             )
         return resp.json().get("answer") or "…"
+    except httpx.ReadTimeout:
+        return "Извините, не могу ответить на данное сообщение."
     finally:
         stop_typing.set()
 
