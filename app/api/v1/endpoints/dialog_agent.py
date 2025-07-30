@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from schemas.agent import AgentRequest, AgentResponse
 from agent.llm_agent import get_assistant_response
 from crud.conversation_history import save_user_message, save_bot_message
+from app.services.profile_sync import schedule_profile_export
 from db.session import get_db
 import logging
 
@@ -36,6 +37,8 @@ async def dialog_agent(request: AgentRequest, db: Session = Depends(get_db)):
             session_id=session.id,
             message=answer
         )
+        # plan export to external profile after inactivity
+        schedule_profile_export(request.user_id)
         logger.info(f"Assistant answered to user {request.user_id}: {answer}")
         return AgentResponse(answer=answer)
         

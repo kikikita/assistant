@@ -8,6 +8,7 @@ from core.config import settings
 from db.session import get_db
 from crud.user import create, get_user_by_tg_id
 from schemas.auth import TelegramAuth, TokenWithUser, UserInfo
+from app.services.profile_sync import import_profile_if_needed
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ router = APIRouter()
     response_model=TokenWithUser,
     summary="Auth by Telegram ID",
 )
-def auth_tg(
+async def auth_tg(
     payload: TelegramAuth, db: Session = Depends(get_db)
 ) -> TokenWithUser:
     """
@@ -25,6 +26,9 @@ def auth_tg(
     и возвращает access‑token вместе с информацией о нём.
     """
     user = get_user_by_tg_id(db, payload.tg_id) or create(db, payload.tg_id)
+
+    # синхронизируем профиль из Tomoru.Team при первом входе
+    await import_profile_if_needed(payload.tg_id)
 
     to_encode = {
         "sub": str(user.tg_id),

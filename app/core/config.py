@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     GSHEETS_FIRST_TAB: str = "Sheet1"                   # имя вкладки
     ADMIN_SYNC_TOKEN: str                               # секрет
 
+    # Tomoru Team
+    TOMORU_TEAM_API_URL: str = 'https://mini-app-backend.app.stage3.tomoru.team/'
+    TOMORU_TEAM_API_KEY: SecretStr = SecretStr("1234567890")
+
     # API
     APP_URL: str = "http://app:8000"
 
